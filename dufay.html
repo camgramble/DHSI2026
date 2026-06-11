@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MEI Score + Audio Sync</title>
+
+  <!-- Verovio Toolkit -->
+  <script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+
+    #score {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .highlight {
+      fill: orange !important;
+      stroke: red !important;
+    }
+  </style>
+</head>
+<body>
+
+<h2>MEI Score with Audio Sync</h2>
+
+<!-- Audio -->
+<audio id="audio" controls>
+  <source src="your-audio.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Score display -->
+<div id="score"></div>
+
+<script>
+  const tk = new verovio.toolkit();
+
+  let meiXML = "";
+  let currentPage = 1;
+
+  // Example timing map (seconds → measure IDs)
+  // You must adapt this based on your MEI / encoding
+  const measureTimings = [
+    { time: 0, measure: "m1" },
+    { time: 5, measure: "m2" },
+    { time: 10, measure: "m3" },
+    { time: 15, measure: "m4" }
+  ];
+
+  // Fetch MEI file
+  fetch("your-score.mei")
+    .then(res => res.text())
+    .then(data => {
+      meiXML = data;
+
+      tk.loadData(meiXML);
+
+      const svg = tk.renderToSVG(currentPage, {});
+      document.getElementById("score").innerHTML = svg;
+    });
+
+  // Highlight measure
+  function highlightMeasure(measureId) {
+    const svg = document.querySelector("#score svg");
+
+    // Clear previous highlights
+    svg.querySelectorAll(".highlight").forEach(el => {
+      el.classList.remove("highlight");
+    });
+
+    // Find measure group
+    const measure = svg.querySelector(`[id="${measureId}"]`);
+    if (measure) {
+      measure.querySelectorAll("rect, path, g").forEach(el => {
+        el.classList.add("highlight");
+      });
+    }
+  }
+
+  // Sync logic
+  const audio = document.getElementById("audio");
+
+  audio.addEventListener("timeupdate", () => {
+    const currentTime = audio.currentTime;
+
+    for (let i = 0; i < measureTimings.length; i++) {
+      const current = measureTimings[i];
+      const next = measureTimings[i + 1];
+
+      if (
+        currentTime >= current.time &&
+        (!next || currentTime < next.time)
+      ) {
+        highlightMeasure(current.measure);
+        break;
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
