@@ -180,15 +180,15 @@ class ScoreFollower {
     this.scrollTo(target);
   }
 
-  scrollTo(el) {
-    const cRect = this.container.getBoundingClientRect();
-    const eRect = el.getBoundingClientRect();
+ scrollTo(el) {
+  const cRect = this.container.getBoundingClientRect();
+  const eRect = el.getBoundingClientRect();
 
-    const offset = eRect.top - cRect.top - cRect.height / 2;
+  const offset = eRect.left - cRect.left - cRect.width / 2;
 
-    this.container.scrollBy({
-      top: offset,
-      behavior: "smooth"
+  this.container.scrollBy({
+    left: offset,
+    behavior: "smooth"
     });
   }
 }
