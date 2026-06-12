@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MEI Score Follower</title>
+<title>MEI Continuous Score Follower</title>
 
 <script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 
@@ -10,13 +10,12 @@
   body {
     margin: 0;
     font-family: sans-serif;
-    background: #f5f5f5;
   }
 
   header {
     padding: 10px;
+    border-bottom: 1px solid #ccc;
     background: white;
-    border-bottom: 1px solid #ddd;
   }
 
   #audio {
@@ -26,7 +25,7 @@
   #score-container {
     height: calc(100vh - 80px);
     overflow-y: auto;
-    background: white;
+    background: #fafafa;
   }
 
   #score svg {
@@ -52,10 +51,10 @@
 </div>
 
 <script>
-class MEIScoreFollower {
-  constructor(options) {
-    this.meiUrl = options.meiUrl;
-    this.scale = options.scale || 40;
+class ContinuousScoreFollower {
+  constructor(meiUrl, scale = 40) {
+    this.meiUrl = meiUrl;
+    this.scale = scale;
 
     this.tk = new verovio.toolkit();
     this.audio = document.getElementById("audio");
@@ -63,7 +62,7 @@ class MEIScoreFollower {
     this.container = document.getElementById("score-container");
 
     this.clips = [];
-    this.currentClipIndex = -1;
+    this.currentIndex = -1;
 
     this.init();
   }
@@ -71,11 +70,10 @@ class MEIScoreFollower {
   async init() {
     const meiText = await fetch(this.meiUrl).then(r => r.text());
 
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(meiText, "text/xml");
+    const xml = new DOMParser().parseFromString(meiText, "text/xml");
 
-    this.extractAudio(xmlDoc);
-    this.extractClips(xmlDoc);
+    this.loadAudio(xml);
+    this.loadClips(xml);
 
     this.tk.loadData(meiText);
     this.render();
@@ -84,38 +82,35 @@ class MEIScoreFollower {
     this.audio.addEventListener("timeupdate", () => this.sync());
   }
 
-  extractAudio(xmlDoc) {
-    const audioFile = xmlDoc.querySelector("recording avFile");
-    if (audioFile) {
-      this.audio.src = audioFile.getAttribute("target");
+  loadAudio(xml) {
+    const av = xml.querySelector("recording avFile");
+    if (av) {
+      this.audio.src = av.getAttribute("target");
     }
   }
 
-  extractClips(xmlDoc) {
-    const clips = xmlDoc.querySelectorAll("recording clip");
-
-    clips.forEach(c => {
-      const start = this.toSeconds(c.getAttribute("begin"));
-      const end = this.toSeconds(c.getAttribute("end"));
+  loadClips(xml) {
+    xml.querySelectorAll("recording clip").forEach(c => {
+      const start = this.toSec(c.getAttribute("begin"));
+      const end = this.toSec(c.getAttribute("end"));
       const id = c.getAttribute("startid")?.replace("#", "");
 
-      if (id) {
-        this.clips.push({ start, end, id });
-      }
+      if (id) this.clips.push({ start, end, id });
     });
 
     this.clips.sort((a, b) => a.start - b.start);
   }
 
-  toSeconds(timeStr) {
-    const [h, m, s] = timeStr.split(":");
-    return (+h) * 3600 + (+m) * 60 + parseFloat(s);
+  toSec(t) {
+    const [h, m, s] = t.split(":");
+    return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
   render() {
     const svg = this.tk.renderToSVG(1, {
       scale: this.scale,
-      breaks: "none",
+      breaks: "none",        // ✅ continuous layout
+      ignoreLayout: 1,       // ✅ overrides MEI pagination
       adjustPageHeight: true,
       pageWidth: this.container.clientWidth * 100
     });
@@ -130,8 +125,8 @@ class MEIScoreFollower {
       const c = this.clips[i];
 
       if (t >= c.start && t < c.end) {
-        if (i !== this.currentClipIndex) {
-          this.currentClipIndex = i;
+        if (i !== this.currentIndex) {
+          this.currentIndex = i;
           this.highlight(c.id);
         }
         break;
@@ -139,13 +134,13 @@ class MEIScoreFollower {
     }
   }
 
-  highlight(xmlId) {
+  highlight(id) {
     const svg = this.scoreDiv.querySelector("svg");
 
     svg.querySelectorAll(".highlight")
       .forEach(el => el.classList.remove("highlight"));
 
-    const el = svg.querySelector(`[id="${xmlId}"]`);
+    const el = svg.querySelector(`[id="${id}"]`);
     if (!el) return;
 
     const measure = el.closest(".measure");
@@ -157,11 +152,10 @@ class MEIScoreFollower {
   }
 
   scrollTo(el) {
-    const containerRect = this.container.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
+    const cRect = this.container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
 
-    const offset =
-      elRect.top - containerRect.top - containerRect.height / 2;
+    const offset = eRect.top - cRect.top - cRect.height / 2;
 
     this.container.scrollBy({
       top: offset,
@@ -170,13 +164,9 @@ class MEIScoreFollower {
   }
 }
 
-// ✅ Initialize player
-new MEIScoreFollower({
-  meiUrl: "data/dufay.mei",   // ← change this
-  scale: 40                  // adjust size here
-});
+// ✅ Initialize (only thing you need to change)
+new ContinuousScoreFollower("data/dufay.mei", 40);
 </script>
 
 </body>
 </html>
-``
