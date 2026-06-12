@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MEI Listener Interface</title>
+
+<script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
+
+<style>
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #f5f5f5;
+  }
+
+  header {
+    height: 70px;
+    padding: 10px;
+    background: white;
+    border-bottom: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+
+  #audio {
+    width: 100%;
+  }
+
+  #score-container {
+    height: calc(100vh - 80px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: white;
+    position: relative;
+  }
+
+  #score svg {
+    height: 100%;
+    width: auto;
+    display: block;
+  }
+
+  /* Playhead line */
+  #playhead {
+    position: fixed;
+    top: 80px;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: red;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Measure highlight */
+  .highlight * {
+    stroke: #0077ff !important;
+    fill: rgba(0, 119, 255, 0.2) !important;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <audio id="audio" controls></audio>
+</header>
+
+<div id="score-container">
+  <div id="score"></div>
+</div>
+
+<div id="playhead"></div>
+
+<script>
+class ListenerInterface {
+  constructor(meiUrl) {
+    this.meiUrl = meiUrl;
+
+    this.tk = new verovio.toolkit();
+    this.audio = document.getElementById("audio");
+    this.scoreDiv = document.getElementById("score");
+    this.container = document.getElementById("score-container");
+
+    this.clips = [];
+    this.currentIndex = -1;
+
+    this.elements = {}; // store SVG elements by id
+
+    this.init();
+  }
+
+  async init() {
+    let meiText = await fetch(this.meiUrl).then(r => r.text());
+
+    // ✅ Remove layout constraints
+    meiText = meiText
+      .replace(/<pb[^>]*>/g, "")
+      .replace(/<sb[^>]*>/g, "");
+
+    const xml = new DOMParser().parseFromString(meiText, "text/xml");
+
+    this.loadAudio(xml);
+    this.loadClips(xml);
+
+    this.tk.loadData(meiText);
+
+    this.render();
+
+    window.addEventListener("resize", () => this.render());
+
+    // ✅ smooth syncing loop
+    requestAnimationFrame(() => this.animate());
+  }
+
+  loadAudio(xml) {
+    const av = xml.querySelector("recording avFile");
+    if (av) {
+      this.audio.src = av.getAttribute("target");
+    }
+  }
+
+  loadClips(xml) {
+    xml.querySelectorAll("recording clip").forEach(c => {
+      const start = this.toSec(c.getAttribute("begin"));
+      const end = this.toSec(c.getAttribute("end"));
+      const id = c.getAttribute("startid")?.replace("#", "");
+
+      if (id) {
+        this.clips.push({ start, end, id });
+      }
+    });
+
+    this.clips.sort((a, b) => a.start - b.start);
+  }
+
+  toSec(t) {
+    const [h, m, s] = t.split(":");
+    return (+h)*3600 + (+m)*60 + parseFloat(s);
+  }
+
+  render() {
+    // Step 1: rough render
+    this.tk.setOptions({
+      scale: 30,
+      breaks: "none",
+      pageWidth: 200000,
+      adjustPageHeight: true
+    });
+
+    let svg = this.tk.renderToSVG(1);
+    this.scoreDiv.innerHTML = svg;
+
+    // Step 2: compute scale from height
+    const svgEl = this.scoreDiv.querySelector("svg");
+    const svgHeight = svgEl.getBoundingClientRect().height;
+    const containerHeight = this.container.clientHeight;
+
+    const scaleFactor = (containerHeight * 0.95) / svgHeight;
+    const scale = Math.max(30, Math.min(120, 30 * scaleFactor));
+
+    // Step 3: re-render correctly
+    this.tk.setOptions({
+      scale: scale,
+      breaks: "none",
+      pageWidth: 200000,
+      adjustPageHeight: true,
+      spacingLinear: 0.25
+    });
+
+    svg = this.tk.renderToSVG(1);
+    this.scoreDiv.innerHTML = svg;
+
+    // cache elements
+    this.cacheElements();
+  }
+
+  cacheElements() {
+    this.elements = {};
+    const svg = this.scoreDiv.querySelector("svg");
+
+    this.clips.forEach(c => {
+      const el = svg.querySelector(`[id="${c.id}"]`);
+      if (el) this.elements[c.id] = el;
+    });
+  }
+
+  animate() {
+    const t = this.audio.currentTime;
+
+    for (let i = 0; i < this.clips.length; i++) {
+      const c = this.clips[i];
+
+      if (t >= c.start && t < c.end) {
+        if (this.currentIndex !== i) {
+          this.currentIndex = i;
+          this.highlight(c.id);
+        }
+
+        // ✅ smooth interpolation inside clip
+        this.scrollSmooth(c, t);
+        break;
+      }
+    }
+
+    requestAnimationFrame(() => this.animate());
+  }
+
+  highlight(id) {
+    const svg = this.scoreDiv.querySelector("svg");
+
+    svg.querySelectorAll(".highlight")
+      .forEach(el => el.classList.remove("highlight"));
+
+    const el = this.elements[id];
+    if (!el) return;
+
+    const measure = el.closest(".measure");
+    (measure || el).classList.add("highlight");
+  }
+
+  scrollSmooth(c, t) {
+    const el = this.elements[c.id];
+    if (!el) return;
+
+    const box = el.getBBox();
+
+    // interpolate inside the clip
+    const progress = (t - c.start) / (c.end - c.start);
+
+    const targetX = box.x + box.width * progress;
+
+    const containerCenter = this.container.clientWidth / 2;
+
+    this.container.scrollTo({
+      left: targetX - containerCenter,
+      behavior: "auto"
+    });
+  }
+}
+
+// ✅ ONLY change this line
+new ListenerInterface("data/dufay.mei");
+</script>
+
+</body>
+</html>
