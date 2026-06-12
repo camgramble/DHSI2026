@@ -90,7 +90,7 @@ class HorizontalScoreFollower {
   async init() {
     let meiText = await fetch(this.meiUrl).then(r => r.text());
 
-    // ✅ Strip page + system breaks (CRITICAL)
+    // ✅ Strip page + system breaks
     meiText = meiText
       .replace(/<pb[^>]*>/g, "")
       .replace(/<sb[^>]*>/g, "");
@@ -100,11 +100,10 @@ class HorizontalScoreFollower {
     this.loadAudio(xml);
     this.loadClips(xml);
 
-    // ✅ Configure Verovio for ONE LONG LINE
     this.tk.setOptions({
       scale: this.scale,
       breaks: "none",
-      pageWidth: 200000,     // ✅ HUGE width (prevents wrapping)
+      pageWidth: 200000,
       adjustPageHeight: true,
       spacingLinear: 0.25
     });
@@ -114,7 +113,9 @@ class HorizontalScoreFollower {
     this.render();
 
     window.addEventListener("resize", () => this.render());
-    this.audio.addEventListener("timeupdate", () => this.sync());
+
+    // ✅ CHANGED: start smooth animation loop
+    requestAnimationFrame(() => this.animate());
   }
 
   loadAudio(xml) {
@@ -141,40 +142,37 @@ class HorizontalScoreFollower {
     return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
-render() {
-  // Step 1: temporary render
-  this.tk.setOptions({
-    scale: 30,
-    breaks: "none",
-    pageWidth: 200000,
-    adjustPageHeight: true
-  });
+  render() {
+    this.tk.setOptions({
+      scale: 30,
+      breaks: "none",
+      pageWidth: 200000,
+      adjustPageHeight: true
+    });
 
-  let svg = this.tk.renderToSVG(1);
-  this.scoreDiv.innerHTML = svg;
+    let svg = this.tk.renderToSVG(1);
+    this.scoreDiv.innerHTML = svg;
 
-  // Step 2: measure actual SVG height
-  const renderedSVG = this.scoreDiv.querySelector("svg");
-  const svgHeight = renderedSVG.getBoundingClientRect().height;
-  const containerHeight = this.container.clientHeight;
+    const renderedSVG = this.scoreDiv.querySelector("svg");
+    const svgHeight = renderedSVG.getBoundingClientRect().height;
+    const containerHeight = this.container.clientHeight;
 
-  // Step 3: compute better scale
-  const scaleFactor = containerHeight / svgHeight;
-  const newScale = 30 * scaleFactor;
+    const scaleFactor = containerHeight / svgHeight;
+    const newScale = 30 * scaleFactor;
 
-  // Step 4: re-render at correct scale
-  this.tk.setOptions({
-    scale: newScale,
-    breaks: "none",
-    pageWidth: 200000,
-    adjustPageHeight: true
-  });
+    this.tk.setOptions({
+      scale: newScale,
+      breaks: "none",
+      pageWidth: 200000,
+      adjustPageHeight: true
+    });
 
-  svg = this.tk.renderToSVG(1);
-  this.scoreDiv.innerHTML = svg;
-}
+    svg = this.tk.renderToSVG(1);
+    this.scoreDiv.innerHTML = svg;
+  }
 
-  sync() {
+  // ✅ NEW: smooth animation loop
+  animate() {
     const t = this.audio.currentTime;
 
     for (let i = 0; i < this.clips.length; i++) {
@@ -185,9 +183,15 @@ render() {
           this.currentIndex = i;
           this.highlight(c.id);
         }
+
+        // ✅ smooth motion happens here
+        this.smoothScroll(c, t);
+
         break;
       }
     }
+
+    requestAnimationFrame(() => this.animate());
   }
 
   highlight(id) {
@@ -203,25 +207,33 @@ render() {
     const target = measure || el;
 
     target.classList.add("highlight");
-
-    this.scrollTo(target);
   }
 
-  // ✅ Horizontal centering scroll
-  scrollTo(el) {
-    const cRect = this.container.getBoundingClientRect();
-    const eRect = el.getBoundingClientRect();
+  // ✅ NEW: smooth scrolling calculation
+  smoothScroll(c, t) {
+    const el = this.scoreDiv.querySelector(`[id="${c.id}"]`);
+    if (!el) return;
 
-    const offset = eRect.left - cRect.left - cRect.width / 2;
+    const rect = el.getBoundingClientRect();
+    const containerRect = this.container.getBoundingClientRect();
 
-    this.container.scrollBy({
-      left: offset,
-      behavior: "smooth"
+    const progress = (t - c.start) / (c.end - c.start);
+
+    const baseLeft =
+      rect.left - containerRect.left + this.container.scrollLeft;
+
+    const targetX = baseLeft + rect.width * progress;
+
+    const center = this.container.clientWidth / 2;
+
+    this.container.scrollTo({
+      left: targetX - center,
+      behavior: "auto"
     });
   }
 }
 
-// ✅ Change only this
+// ✅ your existing init line
 new HorizontalScoreFollower("data/dufay.mei", 50);
 </script>
 
