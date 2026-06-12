@@ -2,37 +2,50 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MEI Smooth Horizontal Follower</title>
+<title>MEI Horizontal Score Follower</title>
 
-https://www.verovio.org/javascript/latest/verovio-toolkit.js
+<script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 
 <style>
-  body { margin: 0; font-family: sans-serif; }
+  body {
+    margin: 0;
+    font-family: sans-serif;
+  }
 
   header {
     height: 70px;
     padding: 10px;
-    background: white;
     border-bottom: 1px solid #ccc;
+    background: #fff;
     box-sizing: border-box;
   }
 
-  #audio { width: 100%; }
+  #audio {
+    width: 100%;
+  }
 
+  /* ✅ Horizontal scrolling container */
   #score-container {
     height: calc(100vh - 80px);
     overflow-x: auto;
     overflow-y: hidden;
     background: #fafafa;
-    position: relative;
   }
 
+  /* ✅ Let SVG grow horizontally */
   #score svg {
     height: 100%;
     width: auto;
     display: block;
   }
 
+  /* Highlight */
+  .highlight * {
+    stroke: red !important;
+    fill: orange !important;
+  }
+
+  /* Optional playhead line (nice visual anchor) */
   #playhead {
     position: fixed;
     top: 80px;
@@ -41,11 +54,6 @@ https://www.verovio.org/javascript/latest/verovio-toolkit.js
     width: 2px;
     background: red;
     pointer-events: none;
-  }
-
-  .highlight * {
-    stroke: #0077ff !important;
-    fill: rgba(0, 119, 255, 0.2) !important;
   }
 </style>
 </head>
@@ -63,9 +71,10 @@ https://www.verovio.org/javascript/latest/verovio-toolkit.js
 <div id="playhead"></div>
 
 <script>
-class SmoothFollower {
-  constructor(meiUrl) {
+class HorizontalScoreFollower {
+  constructor(meiUrl, scale = 50) {
     this.meiUrl = meiUrl;
+    this.scale = scale;
 
     this.tk = new verovio.toolkit();
     this.audio = document.getElementById("audio");
@@ -73,7 +82,6 @@ class SmoothFollower {
     this.container = document.getElementById("score-container");
 
     this.clips = [];
-    this.elements = {};
     this.currentIndex = -1;
 
     this.init();
@@ -82,28 +90,38 @@ class SmoothFollower {
   async init() {
     let meiText = await fetch(this.meiUrl).then(r => r.text());
 
-    // ✅ STRONG removal of pb/sb
+    // ✅ Strip page + system breaks (CRITICAL)
     meiText = meiText
-      .replace(/<pb\b[^>]*\/?>/gi, "")
-      .replace(/<sb\b[^>]*\/?>/gi, "");
+      .replace(/<pb[^>]*>/g, "")
+      .replace(/<sb[^>]*>/g, "");
 
     const xml = new DOMParser().parseFromString(meiText, "text/xml");
 
     this.loadAudio(xml);
     this.loadClips(xml);
 
+    // ✅ Configure Verovio for ONE LONG LINE
+    this.tk.setOptions({
+      scale: this.scale,
+      breaks: "none",
+      pageWidth: 200000,     // ✅ HUGE width (prevents wrapping)
+      adjustPageHeight: true,
+      spacingLinear: 0.25
+    });
+
     this.tk.loadData(meiText);
 
     this.render();
 
     window.addEventListener("resize", () => this.render());
-
-    requestAnimationFrame(() => this.animate());
+    this.audio.addEventListener("timeupdate", () => this.sync());
   }
 
   loadAudio(xml) {
     const av = xml.querySelector("recording avFile");
-    if (av) this.audio.src = av.getAttribute("target");
+    if (av) {
+      this.audio.src = av.getAttribute("target");
+    }
   }
 
   loadClips(xml) {
@@ -111,6 +129,7 @@ class SmoothFollower {
       const start = this.toSec(c.getAttribute("begin"));
       const end = this.toSec(c.getAttribute("end"));
       const id = c.getAttribute("startid")?.replace("#", "");
+
       if (id) this.clips.push({ start, end, id });
     });
 
@@ -122,68 +141,53 @@ class SmoothFollower {
     return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
-  render() {
-    // base render
-    this.tk.setOptions({
-      scale: 30,
-      breaks: "none",
-      pageWidth: 200000,
-      adjustPageHeight: true
-    });
+render() {
+  // Step 1: temporary render
+  this.tk.setOptions({
+    scale: 30,
+    breaks: "none",
+    pageWidth: 200000,
+    adjustPageHeight: true
+  });
 
-    let svg = this.tk.renderToSVG(1);
-    this.scoreDiv.innerHTML = svg;
+  let svg = this.tk.renderToSVG(1);
+  this.scoreDiv.innerHTML = svg;
 
-    // rescale to fit height
-    const svgEl = this.scoreDiv.querySelector("svg");
-    const svgHeight = svgEl.getBoundingClientRect().height;
-    const targetHeight = this.container.clientHeight;
+  // Step 2: measure actual SVG height
+  const renderedSVG = this.scoreDiv.querySelector("svg");
+  const svgHeight = renderedSVG.getBoundingClientRect().height;
+  const containerHeight = this.container.clientHeight;
 
-    const scaleFactor = (targetHeight * 0.95) / svgHeight;
-    const scale = Math.max(30, Math.min(120, 30 * scaleFactor));
+  // Step 3: compute better scale
+  const scaleFactor = containerHeight / svgHeight;
+  const newScale = 30 * scaleFactor;
 
-    this.tk.setOptions({
-      scale: scale,
-      breaks: "none",
-      pageWidth: 200000,
-      adjustPageHeight: true
-    });
+  // Step 4: re-render at correct scale
+  this.tk.setOptions({
+    scale: newScale,
+    breaks: "none",
+    pageWidth: 200000,
+    adjustPageHeight: true
+  });
 
-    svg = this.tk.renderToSVG(1);
-    this.scoreDiv.innerHTML = svg;
+  svg = this.tk.renderToSVG(1);
+  this.scoreDiv.innerHTML = svg;
+}
 
-    this.cacheElements();
-  }
-
-  cacheElements() {
-    this.elements = {};
-    const svg = this.scoreDiv.querySelector("svg");
-
-    this.clips.forEach(c => {
-      const el = svg.querySelector(`[id="${c.id}"]`);
-      if (el) this.elements[c.id] = el;
-    });
-  }
-
-  animate() {
+  sync() {
     const t = this.audio.currentTime;
 
     for (let i = 0; i < this.clips.length; i++) {
       const c = this.clips[i];
 
       if (t >= c.start && t < c.end) {
-
-        if (this.currentIndex !== i) {
+        if (i !== this.currentIndex) {
           this.currentIndex = i;
           this.highlight(c.id);
         }
-
-        this.smoothScroll(c, t);
         break;
       }
     }
-
-    requestAnimationFrame(() => this.animate());
   }
 
   highlight(id) {
@@ -192,38 +196,33 @@ class SmoothFollower {
     svg.querySelectorAll(".highlight")
       .forEach(el => el.classList.remove("highlight"));
 
-    const el = this.elements[id];
+    const el = svg.querySelector(`[id="${id}"]`);
     if (!el) return;
 
     const measure = el.closest(".measure");
-    (measure || el).classList.add("highlight");
+    const target = measure || el;
+
+    target.classList.add("highlight");
+
+    this.scrollTo(target);
   }
 
-  smoothScroll(c, t) {
-    const el = this.elements[c.id];
-    if (!el) return;
+  // ✅ Horizontal centering scroll
+  scrollTo(el) {
+    const cRect = this.container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
 
-    const rect = el.getBoundingClientRect();
-    const containerRect = this.container.getBoundingClientRect();
+    const offset = eRect.left - cRect.left - cRect.width / 2;
 
-    // progress inside clip
-    const progress = (t - c.start) / (c.end - c.start);
-
-    const elementLeft = rect.left - containerRect.left + this.container.scrollLeft;
-    const elementWidth = rect.width;
-
-    const targetX = elementLeft + elementWidth * progress;
-
-    const center = this.container.clientWidth / 2;
-
-    this.container.scrollTo({
-      left: targetX - center,
-      behavior: "auto"
+    this.container.scrollBy({
+      left: offset,
+      behavior: "smooth"
     });
   }
 }
 
-new SmoothFollower("data/dufay.mei");
+// ✅ Change only this
+new HorizontalScoreFollower("data/dufay.mei", 50);
 </script>
 
 </body>
