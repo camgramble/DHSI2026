@@ -34,8 +34,8 @@
   }
 
   .highlight * {
-    stroke: red !important;
-    fill: orange !important;
+    stroke: blue !important;
+    fill: green !important;
   }
 </style>
 </head>
@@ -108,19 +108,20 @@ class ContinuousScoreFollower {
 
   
 render() {
-  // ✅ Force re-layout BEFORE rendering
   this.tk.setOptions({
     scale: this.scale,
     breaks: "none",
     ignoreLayout: 1,
-    pageHeight: 100000,   // ✅ huge page height
-    pageWidth: this.container.clientWidth * 100
+    pageHeight: 100000,
+    pageWidth: this.container.clientWidth * 100,
+    adjustPageHeight: true
   });
 
-  const svg = this.tk.renderToSVG(1);
+  // ✅ THIS is the key change
+  const svg = this.tk.renderData();
 
-    this.scoreDiv.innerHTML = svg;
-  }
+  this.scoreDiv.innerHTML = svg;
+}
 
   sync() {
     const t = this.audio.currentTime;
