@@ -37,7 +37,7 @@
    <music>
       <performance>
          <recording begin="00:00:00.00" end="00:04:59.12" betype="time" n="completeWork">
-            <avFile mimeType="audio/mpeg-3" target="https://archive.org/download/05-early-music-consort-amoureux-suy-binchois-rondeau/10-Early%20Music%20Consort%20-%20Par%20droit%20je%20puis%20%28Dufay%29%20rondeau.mp3"></avFile>
+            <avFile mimetype="audio/mpeg-3" target="https://archive.org/download/05-early-music-consort-amoureux-suy-binchois-rondeau/10-Early%20Music%20Consort%20-%20Par%20droit%20je%20puis%20%28Dufay%29%20rondeau.mp3"></avFile>
             <clip begin="00:00:01.00" end="00:00:04.00" betype="time" n="A1-m01" startid="#u10c2jr8"></clip>   <!-- A -->
             <clip begin="00:00:04.00" end="00:00:07.00" betype="time" n="A1-m02" startid="#jvq6pi8"></clip>  
             <clip begin="00:00:07.00" end="00:00:10.00" betype="time" n="A1-m03" startid="#o18ds36p"></clip>
@@ -197,32 +197,52 @@
                               <note xml:id="k1n5732i" dur.ppq="2" dur="2" oct="4" pname="a" stem.dir="down">
                                  <accid xml:id="l1omu32l" />
                                  <verse xml:id="morucug" n="1">
-                                    <syl xml:id="n1m0wsd4" con="s" wordpos="s">Par</syl>
+                                    <syl xml:id="n1m0wsd4" con="s" wordpos="s">1. Par</syl>
                                  </verse>
+                                 <verse n="2"><syl con="d" wordpos="i">3. Rai</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="s">4. Par</syl></verse>
+                                 <verse n="4"><syl con="d" wordpos="i">5. Des</syl></verse>
+                                 <verse n="5"><syl con="s" wordpos="s">7. Par</syl></verse>                                 
                               </note>
                               <note xml:id="pgnaqhk" dur.ppq="2" dur="2" oct="4" pname="a" stem.dir="down">
                                  <accid xml:id="qn9nebg" />
                                  <verse xml:id="r1gv1oil" n="1">
                                     <syl xml:id="s4pb4do" con="s" wordpos="s">droit</syl>
                                  </verse>
+                                 <verse n="2"><syl con="s" wordpos="t">son</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="s">droit</syl></verse>
+                                 <verse n="4"><syl con="d" wordpos="m">chass</syl></verse>
+                                 <verse n="5"><syl con="s" wordpos="s">droit</syl></verse>                                 
                               </note>
                               <note xml:id="u16a1uvt" dur.ppq="2" dur="2" oct="4" pname="g" stem.dir="down">
                                  <accid xml:id="v14cmd82" />
                                  <verse xml:id="w1nl1572" n="1">
                                     <syl xml:id="x1aeqc5t" con="s" wordpos="s">je</syl>
                                  </verse>
+                                 <verse n="2"><syl con="s" wordpos="s">me</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="s">je</syl></verse>
+                                 <verse n="4"><syl con="s" wordpos="t">ies</syl></verse>
+                                 <verse n="5"><syl con="s" wordpos="s">je</syl></verse>                                 
                               </note>
                               <note xml:id="z1rpalj9" dur.ppq="2" dur="2" oct="4" pname="f" stem.dir="down">
                                  <accid xml:id="a10xuqt9" />
                                  <verse xml:id="bvrhmyz" n="1">
                                     <syl xml:id="c1wxiykw" con="s" wordpos="s">puis</syl>
                                  </verse>
+                                 <verse n="2"><syl con="s" wordpos="s">nuist</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="s">son</syl></verse>
+                                 <verse n="4"><syl con="s" wordpos="s">sui</syl></verse>
+                                 <verse n="5"><syl con="s" wordpos="s">puis</syl></verse>                                 
                               </note>
                               <note xml:id="e1djhpul" dur.ppq="4" dur="1" oct="4" pname="b">
                                  <accid xml:id="f1rjfnf5" accid="f" accid.ges="f" />
                                  <verse xml:id="ge24vl" n="1">
                                     <syl xml:id="hug3ael" con="s" wordpos="s">bien</syl>
                                  </verse>
+                                 <verse n="2"><syl con="s" wordpos="s">et</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="s">bien</syl></verse>
+                                 <verse n="4"><syl con="s" wordpos="s">ne</syl></verse>
+                                 <verse n="5"><syl con="s" wordpos="s">bien</syl></verse>                                 
                               </note>
                            </layer>
                         </staff>
@@ -1007,26 +1027,33 @@
                               <note xml:id="c1kp8u8z" dur.ppq="2" dur="2" oct="4" pname="e" stem.dir="down">
                                  <accid xml:id="d1nhzdlj" />
                                  <verse xml:id="e1ca9yhp" n="1">
-                                    <syl xml:id="f1m0miip" con="s" wordpos="s">un</syl>
+                                    <syl xml:id="f1m0miip" con="s" wordpos="s">2. un</syl>
                                  </verse>
+                                 <verse n="2"><syl con="d" wordpos="i">6. a</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="s">8. un</syl></verse>
                               </note>
                               <note xml:id="h1bbi0xk" dur.ppq="2" dur="2" oct="4" pname="f" stem.dir="down">
                                  <accid xml:id="ihndb7y" />
                                  <verse xml:id="jjskvc7" n="1">
                                     <syl xml:id="k1raibat" con="d" wordpos="i">se</syl>
                                  </verse>
+                                 <verse n="2"><syl con="d" wordpos="m">ve</syl></verse>
+                                 <verse n="3"><syl con="u" wordpos="s">seul</syl></verse>
                               </note>
                               <note xml:id="m10bp7qz" dur.ppq="2" dur="2" oct="4" pname="e" stem.dir="down">
                                  <accid xml:id="nn838hj" />
                                  <verse xml:id="of8v565" n="1">
                                     <syl xml:id="pcrzept" con="s" wordpos="t">ul</syl>
                                  </verse>
+                                 <verse n="3"><syl con="s" wordpos="t">ul</syl></verse>
                               </note>
                               <note xml:id="roj2z40" dur.ppq="2" dur="2" oct="4" pname="d" stem.dir="up">
                                  <accid xml:id="s1h6tthx" />
                                  <verse xml:id="t13bwrrp" n="1">
                                     <syl xml:id="u1eraaxu" con="d" wordpos="i">con</syl>
                                  </verse>
+                                 <verse n="2"><syl con="s" wordpos="t">nus</syl></verse>
+                                 <verse n="3"><syl con="d" wordpos="i">con</syl></verse>
                               </note>
                            </layer>
                         </staff>
@@ -1083,18 +1110,24 @@
                                  <verse xml:id="kd1c5jc" n="1">
                                     <syl xml:id="l199lpk8" con="s" wordpos="t">fort</syl>
                                  </verse>
+                                 <verse n="2"><syl con="s" wordpos="s">sont</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="t">fort</syl></verse>
                               </note>
                               <note xml:id="n5l7s4y" dur.ppq="4" dur="1" oct="4" pname="g">
                                  <accid xml:id="oyy7nev" />
                                  <verse xml:id="p1xkd4dx" n="1">
                                     <syl xml:id="qhajp21" con="s" wordpos="s">ou</syl>
                                  </verse>
+                                 <verse n="2"><syl con="s" wordpos="s">ceus</syl></verse>
+                                 <verse n="3"><syl con="s" wordpos="s">ou</syl></verse>
                               </note>
                               <note xml:id="s1ug380f" dur.ppq="4" dur="1" oct="4" pname="f">
                                  <accid xml:id="trwle4" />
                                  <verse xml:id="uuemu6t" n="1">
                                     <syl xml:id="v1mkmx1n" con="d" wordpos="i">pren</syl>
                                  </verse>
+                                 <verse n="2"><syl con="d" wordpos="i">qua</syl></verse>
+                                 <verse n="3"><syl con="d" wordpos="i">pren</syl></verse>
                               </note>
                               <note xml:id="x18nmzsm" dur.ppq="2" dur="2" oct="4" pname="e" stem.dir="down">
                                  <accid xml:id="ydwazg5" />
