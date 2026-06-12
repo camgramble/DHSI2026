@@ -2,16 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MEI Listener Interface</title>
+<title>MEI Smooth Horizontal Follower</title>
 
-<script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
+https://www.verovio.org/javascript/latest/verovio-toolkit.js
 
 <style>
-  body {
-    margin: 0;
-    font-family: sans-serif;
-    background: #f5f5f5;
-  }
+  body { margin: 0; font-family: sans-serif; }
 
   header {
     height: 70px;
@@ -21,15 +17,13 @@
     box-sizing: border-box;
   }
 
-  #audio {
-    width: 100%;
-  }
+  #audio { width: 100%; }
 
   #score-container {
     height: calc(100vh - 80px);
     overflow-x: auto;
     overflow-y: hidden;
-    background: white;
+    background: #fafafa;
     position: relative;
   }
 
@@ -39,7 +33,6 @@
     display: block;
   }
 
-  /* Playhead line */
   #playhead {
     position: fixed;
     top: 80px;
@@ -48,10 +41,8 @@
     width: 2px;
     background: red;
     pointer-events: none;
-    z-index: 10;
   }
 
-  /* Measure highlight */
   .highlight * {
     stroke: #0077ff !important;
     fill: rgba(0, 119, 255, 0.2) !important;
@@ -72,7 +63,7 @@
 <div id="playhead"></div>
 
 <script>
-class ListenerInterface {
+class SmoothFollower {
   constructor(meiUrl) {
     this.meiUrl = meiUrl;
 
@@ -82,9 +73,8 @@ class ListenerInterface {
     this.container = document.getElementById("score-container");
 
     this.clips = [];
+    this.elements = {};
     this.currentIndex = -1;
-
-    this.elements = {}; // store SVG elements by id
 
     this.init();
   }
@@ -92,10 +82,10 @@ class ListenerInterface {
   async init() {
     let meiText = await fetch(this.meiUrl).then(r => r.text());
 
-    // ✅ Remove layout constraints
+    // ✅ STRONG removal of pb/sb
     meiText = meiText
-      .replace(/<pb[^>]*>/g, "")
-      .replace(/<sb[^>]*>/g, "");
+      .replace(/<pb\b[^>]*\/?>/gi, "")
+      .replace(/<sb\b[^>]*\/?>/gi, "");
 
     const xml = new DOMParser().parseFromString(meiText, "text/xml");
 
@@ -108,15 +98,12 @@ class ListenerInterface {
 
     window.addEventListener("resize", () => this.render());
 
-    // ✅ smooth syncing loop
     requestAnimationFrame(() => this.animate());
   }
 
   loadAudio(xml) {
     const av = xml.querySelector("recording avFile");
-    if (av) {
-      this.audio.src = av.getAttribute("target");
-    }
+    if (av) this.audio.src = av.getAttribute("target");
   }
 
   loadClips(xml) {
@@ -124,10 +111,7 @@ class ListenerInterface {
       const start = this.toSec(c.getAttribute("begin"));
       const end = this.toSec(c.getAttribute("end"));
       const id = c.getAttribute("startid")?.replace("#", "");
-
-      if (id) {
-        this.clips.push({ start, end, id });
-      }
+      if (id) this.clips.push({ start, end, id });
     });
 
     this.clips.sort((a, b) => a.start - b.start);
@@ -139,7 +123,7 @@ class ListenerInterface {
   }
 
   render() {
-    // Step 1: rough render
+    // base render
     this.tk.setOptions({
       scale: 30,
       breaks: "none",
@@ -150,27 +134,24 @@ class ListenerInterface {
     let svg = this.tk.renderToSVG(1);
     this.scoreDiv.innerHTML = svg;
 
-    // Step 2: compute scale from height
+    // rescale to fit height
     const svgEl = this.scoreDiv.querySelector("svg");
     const svgHeight = svgEl.getBoundingClientRect().height;
-    const containerHeight = this.container.clientHeight;
+    const targetHeight = this.container.clientHeight;
 
-    const scaleFactor = (containerHeight * 0.95) / svgHeight;
+    const scaleFactor = (targetHeight * 0.95) / svgHeight;
     const scale = Math.max(30, Math.min(120, 30 * scaleFactor));
 
-    // Step 3: re-render correctly
     this.tk.setOptions({
       scale: scale,
       breaks: "none",
       pageWidth: 200000,
-      adjustPageHeight: true,
-      spacingLinear: 0.25
+      adjustPageHeight: true
     });
 
     svg = this.tk.renderToSVG(1);
     this.scoreDiv.innerHTML = svg;
 
-    // cache elements
     this.cacheElements();
   }
 
@@ -191,13 +172,13 @@ class ListenerInterface {
       const c = this.clips[i];
 
       if (t >= c.start && t < c.end) {
+
         if (this.currentIndex !== i) {
           this.currentIndex = i;
           this.highlight(c.id);
         }
 
-        // ✅ smooth interpolation inside clip
-        this.scrollSmooth(c, t);
+        this.smoothScroll(c, t);
         break;
       }
     }
@@ -218,28 +199,31 @@ class ListenerInterface {
     (measure || el).classList.add("highlight");
   }
 
-  scrollSmooth(c, t) {
+  smoothScroll(c, t) {
     const el = this.elements[c.id];
     if (!el) return;
 
-    const box = el.getBBox();
+    const rect = el.getBoundingClientRect();
+    const containerRect = this.container.getBoundingClientRect();
 
-    // interpolate inside the clip
+    // progress inside clip
     const progress = (t - c.start) / (c.end - c.start);
 
-    const targetX = box.x + box.width * progress;
+    const elementLeft = rect.left - containerRect.left + this.container.scrollLeft;
+    const elementWidth = rect.width;
 
-    const containerCenter = this.container.clientWidth / 2;
+    const targetX = elementLeft + elementWidth * progress;
+
+    const center = this.container.clientWidth / 2;
 
     this.container.scrollTo({
-      left: targetX - containerCenter,
+      left: targetX - center,
       behavior: "auto"
     });
   }
 }
 
-// ✅ ONLY change this line
-new ListenerInterface("data/dufay.mei");
+new SmoothFollower("data/dufay.mei");
 </script>
 
 </body>
