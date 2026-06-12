@@ -106,14 +106,18 @@ class ContinuousScoreFollower {
     return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
-  render() {
-    const svg = this.tk.renderToSVG(1, {
-      scale: this.scale,
-      breaks: "none",        // ✅ continuous layout
-      ignoreLayout: 1,       // ✅ overrides MEI pagination
-      adjustPageHeight: true,
-      pageWidth: this.container.clientWidth * 100
-    });
+  
+render() {
+  // ✅ Force re-layout BEFORE rendering
+  this.tk.setOptions({
+    scale: this.scale,
+    breaks: "none",
+    ignoreLayout: 1,
+    pageHeight: 100000,   // ✅ huge page height
+    pageWidth: this.container.clientWidth * 100
+  });
+
+  const svg = this.tk.renderToSVG(1);
 
     this.scoreDiv.innerHTML = svg;
   }
