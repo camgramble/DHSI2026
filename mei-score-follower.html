@@ -14,8 +14,8 @@
 
   header {
     padding: 10px;
+    background: #fff;
     border-bottom: 1px solid #ccc;
-    background: white;
   }
 
   #audio {
@@ -31,11 +31,12 @@
   #score svg {
     width: 100%;
     height: auto;
+    display: block;
   }
 
   .highlight * {
-    stroke: blue !important;
-    fill: green !important;
+    stroke: red !important;
+    fill: orange !important;
   }
 </style>
 </head>
@@ -51,7 +52,7 @@
 </div>
 
 <script>
-class ContinuousScoreFollower {
+class ScoreFollower {
   constructor(meiUrl, scale = 40) {
     this.meiUrl = meiUrl;
     this.scale = scale;
@@ -68,21 +69,35 @@ class ContinuousScoreFollower {
   }
 
   async init() {
-    
-const meiTextOriginal = await fetch(this.meiUrl).then(r => r.text());
+    let meiText = await fetch(this.meiUrl).then(r => r.text());
 
-// ✅ Remove page + system breaks
-const meiText = meiTextOriginal
-  .replace(/<pb[^>]*\/>/g, "")
-  .replace(/<sb[^>]*\/>/g, "");
-
+    // ✅ HARD FIX: remove page/system breaks + normalize whitespace
+    meiText = meiText
+      .replace(/<pb[^>]*>/g, "")
+      .replace(/<sb[^>]*>/g, "")
+      .replace(/\s+/g, " ");
 
     const xml = new DOMParser().parseFromString(meiText, "text/xml");
 
     this.loadAudio(xml);
     this.loadClips(xml);
 
+    // ✅ VERY IMPORTANT: set options BEFORE loading data
+    this.tk.setOptions({
+      scale: this.scale,
+      breaks: "none",
+      adjustPageHeight: true,
+      pageWidth: this.container.clientWidth * 100,
+      spacingLinear: 0.25,
+      systemSpacing: 160,
+      staffSpacing: 80
+    });
+
     this.tk.loadData(meiText);
+
+    // ✅ Debug (you can check this in console)
+    console.log("Page count after cleaning:", this.tk.getPageCount());
+
     this.render();
 
     window.addEventListener("resize", () => this.render());
@@ -113,21 +128,12 @@ const meiText = meiTextOriginal
     return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
-  
+  render() {
+    // ✅ KEY: always render page 1 AFTER layout normalization
+    const svg = this.tk.renderToSVG(1);
 
-render() {
-  this.tk.setOptions({
-    scale: this.scale,
-    breaks: "none",
-    adjustPageHeight: true,
-    pageWidth: this.container.clientWidth * 100
-  });
-
-  const svg = this.tk.renderToSVG(1);
-  this.scoreDiv.innerHTML = svg;
-}
-
-
+    this.scoreDiv.innerHTML = svg;
+  }
 
   sync() {
     const t = this.audio.currentTime;
@@ -175,8 +181,8 @@ render() {
   }
 }
 
-// ✅ Initialize (only thing you need to change)
-new ContinuousScoreFollower("data/dufay.mei", 40);
+// ✅ CHANGE ONLY THIS
+new ScoreFollower("data/dufay.mei", 40);
 </script>
 
 </body>
