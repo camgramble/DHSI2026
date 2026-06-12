@@ -141,10 +141,38 @@ class HorizontalScoreFollower {
     return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
-  render() {
-    const svg = this.tk.renderToSVG(1);
-    this.scoreDiv.innerHTML = svg;
-  }
+render() {
+  // Step 1: temporary render
+  this.tk.setOptions({
+    scale: 30,
+    breaks: "none",
+    pageWidth: 200000,
+    adjustPageHeight: true
+  });
+
+  let svg = this.tk.renderToSVG(1);
+  this.scoreDiv.innerHTML = svg;
+
+  // Step 2: measure actual SVG height
+  const renderedSVG = this.scoreDiv.querySelector("svg");
+  const svgHeight = renderedSVG.getBoundingClientRect().height;
+  const containerHeight = this.container.clientHeight;
+
+  // Step 3: compute better scale
+  const scaleFactor = containerHeight / svgHeight;
+  const newScale = 30 * scaleFactor;
+
+  // Step 4: re-render at correct scale
+  this.tk.setOptions({
+    scale: newScale,
+    breaks: "none",
+    pageWidth: 200000,
+    adjustPageHeight: true
+  });
+
+  svg = this.tk.renderToSVG(1);
+  this.scoreDiv.innerHTML = svg;
+}
 
   sync() {
     const t = this.audio.currentTime;
