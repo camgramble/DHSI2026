@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MEI Continuous Score Follower</title>
+<title>MEI Horizontal Score Follower</title>
 
 <script src="https://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 
@@ -13,31 +13,47 @@
   }
 
   header {
+    height: 70px;
     padding: 10px;
-    background: #fff;
     border-bottom: 1px solid #ccc;
+    background: #fff;
+    box-sizing: border-box;
   }
 
   #audio {
     width: 100%;
   }
 
-#score-container {
-  height: calc(100vh - 80px);
-  overflow-x: auto;        /* ✅ horizontal scroll */
-  overflow-y: hidden;      /* ✅ no vertical scroll */
-  white-space: nowrap;
-  background: #fafafa;
-}
+  /* ✅ Horizontal scrolling container */
+  #score-container {
+    height: calc(100vh - 80px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #fafafa;
+  }
 
-#score svg {
-  height: 100%;            /* ✅ fill vertical space */
-  width: auto;             /* ✅ expand horizontally */
-  display: block;
-}
+  /* ✅ Let SVG grow horizontally */
+  #score svg {
+    height: 100%;
+    width: auto;
+    display: block;
+  }
+
+  /* Highlight */
   .highlight * {
     stroke: red !important;
     fill: orange !important;
+  }
+
+  /* Optional playhead line (nice visual anchor) */
+  #playhead {
+    position: fixed;
+    top: 80px;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: red;
+    pointer-events: none;
   }
 </style>
 </head>
@@ -52,9 +68,11 @@
   <div id="score"></div>
 </div>
 
+<div id="playhead"></div>
+
 <script>
-class ScoreFollower {
-  constructor(meiUrl, scale = 40) {
+class HorizontalScoreFollower {
+  constructor(meiUrl, scale = 50) {
     this.meiUrl = meiUrl;
     this.scale = scale;
 
@@ -72,32 +90,26 @@ class ScoreFollower {
   async init() {
     let meiText = await fetch(this.meiUrl).then(r => r.text());
 
-    // ✅ HARD FIX: remove page/system breaks + normalize whitespace
+    // ✅ Strip page + system breaks (CRITICAL)
     meiText = meiText
       .replace(/<pb[^>]*>/g, "")
-      .replace(/<sb[^>]*>/g, "")
-      .replace(/\s+/g, " ");
+      .replace(/<sb[^>]*>/g, "");
 
     const xml = new DOMParser().parseFromString(meiText, "text/xml");
 
     this.loadAudio(xml);
     this.loadClips(xml);
 
-    // ✅ VERY IMPORTANT: set options BEFORE loading data
+    // ✅ Configure Verovio for ONE LONG LINE
     this.tk.setOptions({
       scale: this.scale,
       breaks: "none",
+      pageWidth: 200000,     // ✅ HUGE width (prevents wrapping)
       adjustPageHeight: true,
-      pageWidth: this.container.clientWidth * 100,
-      spacingLinear: 0.25,
-      systemSpacing: 160,
-      staffSpacing: 80
+      spacingLinear: 0.25
     });
 
     this.tk.loadData(meiText);
-
-    // ✅ Debug (you can check this in console)
-    console.log("Page count after cleaning:", this.tk.getPageCount());
 
     this.render();
 
@@ -129,23 +141,10 @@ class ScoreFollower {
     return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
- render() {
-  this.tk.setOptions({
-    scale: this.scale,
-    breaks: "none",
-    adjustPageHeight: true,
-
-    // ✅ Critical: EXTREMELY wide page
-    pageWidth: 200000,
-
-    spacingLinear: 0.25,
-    systemSpacing: 160,
-    staffSpacing: 80
-  });
-
-  const svg = this.tk.renderToSVG(1);
-  this.scoreDiv.innerHTML = svg;
-}
+  render() {
+    const svg = this.tk.renderToSVG(1);
+    this.scoreDiv.innerHTML = svg;
+  }
 
   sync() {
     const t = this.audio.currentTime;
@@ -180,21 +179,22 @@ class ScoreFollower {
     this.scrollTo(target);
   }
 
- scrollTo(el) {
-  const cRect = this.container.getBoundingClientRect();
-  const eRect = el.getBoundingClientRect();
+  // ✅ Horizontal centering scroll
+  scrollTo(el) {
+    const cRect = this.container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
 
-  const offset = eRect.left - cRect.left - cRect.width / 2;
+    const offset = eRect.left - cRect.left - cRect.width / 2;
 
-  this.container.scrollBy({
-    left: offset,
-    behavior: "smooth"
+    this.container.scrollBy({
+      left: offset,
+      behavior: "smooth"
     });
   }
 }
 
-// ✅ CHANGE ONLY THIS
-new ScoreFollower("data/dufay.mei", 40);
+// ✅ Change only this
+new HorizontalScoreFollower("data/dufay.mei", 50);
 </script>
 
 </body>
