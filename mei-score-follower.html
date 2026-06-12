@@ -34,8 +34,8 @@
   }
 
   .highlight * {
-    stroke: blue !important;
-    fill: green !important;
+    stroke: red !important;
+    fill: orange !important;
   }
 </style>
 </head>
@@ -111,17 +111,15 @@ render() {
   this.tk.setOptions({
     scale: this.scale,
     breaks: "none",
-    ignoreLayout: 1,
-    pageHeight: 100000,
     pageWidth: this.container.clientWidth * 100,
     adjustPageHeight: true
   });
 
-  // ✅ THIS is the key change
-  const svg = this.tk.renderData();
+  const svg = this.tk.renderToSVG(1);
 
   this.scoreDiv.innerHTML = svg;
 }
+
 
   sync() {
     const t = this.audio.currentTime;
