@@ -22,21 +22,22 @@
     width: 100%;
   }
 
-  #score-container {
-    height: calc(100vh - 80px);
-    overflow-y: auto;
-    background: #fafafa;
-  }
+#score-container {
+  height: calc(100vh - 80px);
+  overflow-x: auto;        /* ✅ horizontal scroll */
+  overflow-y: hidden;      /* ✅ no vertical scroll */
+  white-space: nowrap;
+  background: #fafafa;
+}
 
-  #score svg {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
+#score svg {
+  height: 100%;            /* ✅ fill vertical space */
+  width: auto;             /* ✅ expand horizontally */
+  display: block;
+}
   .highlight * {
-    stroke: red !important;
-    fill: orange !important;
+    stroke: blue !important;
+    fill: green !important;
   }
 </style>
 </head>
@@ -128,12 +129,23 @@ class ScoreFollower {
     return (+h)*3600 + (+m)*60 + parseFloat(s);
   }
 
-  render() {
-    // ✅ KEY: always render page 1 AFTER layout normalization
-    const svg = this.tk.renderToSVG(1);
+ render() {
+  this.tk.setOptions({
+    scale: this.scale,
+    breaks: "none",
+    adjustPageHeight: true,
 
-    this.scoreDiv.innerHTML = svg;
-  }
+    // ✅ Critical: EXTREMELY wide page
+    pageWidth: 200000,
+
+    spacingLinear: 0.25,
+    systemSpacing: 160,
+    staffSpacing: 80
+  });
+
+  const svg = this.tk.renderToSVG(1);
+  this.scoreDiv.innerHTML = svg;
+}
 
   sync() {
     const t = this.audio.currentTime;
