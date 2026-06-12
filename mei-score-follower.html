@@ -34,8 +34,8 @@
   }
 
   .highlight * {
-    stroke: red !important;
-    fill: orange !important;
+    stroke: blue !important;
+    fill: green !important;
   }
 </style>
 </head>
@@ -68,7 +68,14 @@ class ContinuousScoreFollower {
   }
 
   async init() {
-    const meiText = await fetch(this.meiUrl).then(r => r.text());
+    
+const meiTextOriginal = await fetch(this.meiUrl).then(r => r.text());
+
+// ✅ Remove page + system breaks
+const meiText = meiTextOriginal
+  .replace(/<pb[^>]*\/>/g, "")
+  .replace(/<sb[^>]*\/>/g, "");
+
 
     const xml = new DOMParser().parseFromString(meiText, "text/xml");
 
@@ -107,18 +114,19 @@ class ContinuousScoreFollower {
   }
 
   
+
 render() {
   this.tk.setOptions({
     scale: this.scale,
     breaks: "none",
-    pageWidth: this.container.clientWidth * 100,
-    adjustPageHeight: true
+    adjustPageHeight: true,
+    pageWidth: this.container.clientWidth * 100
   });
 
   const svg = this.tk.renderToSVG(1);
-
   this.scoreDiv.innerHTML = svg;
 }
+
 
 
   sync() {
